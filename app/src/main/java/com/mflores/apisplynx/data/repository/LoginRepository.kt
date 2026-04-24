@@ -1,6 +1,7 @@
 package com.mflores.apisplynx.data.repository
 
 import android.content.Context
+import com.mflores.apisplynx.data.local.SessionManager
 import com.mflores.apisplynx.data.model.LoginRequest
 import com.mflores.apisplynx.data.model.LoginResponse
 import com.mflores.apisplynx.data.model.TaskItem
@@ -15,24 +16,30 @@ import retrofit2.Response
  */
 class LoginRepository(private val context: Context) {
 
-    // Obtenemos el servicio de API pasando el contexto para que el interceptor
-    // pueda acceder a los tokens guardados.
     private val apiService = RetrofitClient.getApiService(context)
+    private val sessionManager = SessionManager(context)
 
     suspend fun login(login: String, password: String): Response<LoginResponse> {
         val request = LoginRequest(
-            authType = "admin", // Splynx 2.0 requiere especificar el tipo de autenticación
+            authType = "admin",
             login = login,
             password = password
         )
 
-        return apiService.login(request)
+        val response = apiService.login(request)
+
+        // Si el login es exitoso, guardamos el token y reiniciamos el cliente
+        if (response.isSuccessful) {
+            response.body()?.effectiveToken?.let { token ->
+                sessionManager.saveAccessToken(token)
+                RetrofitClient.clearInstance() // Fuerza recrear el cliente con el token nuevo
+            }
+        }
+
+        return response
     }
 
-    /**
-     * Obtiene el listado de tareas asignadas al administrador desde el endpoint de Scheduling.
-     */
     suspend fun getTasks(): Response<List<TaskItem>> {
-        return apiService.getTasks()
+        return RetrofitClient.getApiService(context).getTasks() // Usa siempre la instancia más reciente
     }
 }

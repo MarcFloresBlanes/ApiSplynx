@@ -34,7 +34,7 @@ class AuthInterceptor(private val sessionManager: SessionManager) : Interceptor 
             val cleanToken = it.trim()
             if (cleanToken.isNotEmpty()) {
                 // FORMATO ESTÁNDAR PARA SPLYNX 2.0 (JWT):
-                requestBuilder.header("Authorization", "Bearer $cleanToken")
+                requestBuilder.header("Authorization", "Splynx-EA (access_token=$cleanToken)")
             }
             
             println("DEBUG_API_V3: Ejecutando interceptor con URL: ${originalRequest.url}")

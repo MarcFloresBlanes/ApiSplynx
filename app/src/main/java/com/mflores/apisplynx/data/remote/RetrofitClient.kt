@@ -6,6 +6,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 /**
  * Cliente de Retrofit centralizado. 
@@ -33,8 +34,11 @@ object RetrofitClient {
 
             // Configuramos el cliente HTTP con nuestros interceptores
             val httpClient = OkHttpClient.Builder()
-                .addInterceptor(AuthInterceptor(sessionManager)) // <--- ESTE PEGA EL TOKEN AUTOMÁTICAMENTE
+                .addInterceptor(AuthInterceptor(sessionManager))
                 .addInterceptor(logging)
+                .connectTimeout(30, TimeUnit.SECONDS)  // ← añade esto
+                .readTimeout(30, TimeUnit.SECONDS)     // ← añade esto
+                .writeTimeout(30, TimeUnit.SECONDS)    // ← añade esto
                 .build()
 
             // Construimos la instancia de Retrofit
@@ -49,4 +53,9 @@ object RetrofitClient {
             service
         }
     }
+
+    fun clearInstance() {
+        apiService = null
+    }
+
 }

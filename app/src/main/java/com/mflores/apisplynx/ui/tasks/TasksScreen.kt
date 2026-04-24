@@ -83,7 +83,7 @@ fun TaskCard(task: TaskItem) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = task.title,
+                text = task.title ?: "Sin título",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -101,7 +101,7 @@ fun TaskCard(task: TaskItem) {
                 Spacer(modifier = Modifier.width(8.dp))
                 // Formateamos la fecha (asumiendo formato YYYY-MM-DD HH:MM:SS)
                 Text(
-                    text = task.dateStart,
+                    text = task.dateStart ?: "Sin fecha",
                     fontSize = 14.sp,
                     color = Color.DarkGray
                 )
