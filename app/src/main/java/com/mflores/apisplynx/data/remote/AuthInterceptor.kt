@@ -37,7 +37,6 @@ class AuthInterceptor(private val sessionManager: SessionManager) : Interceptor 
                 requestBuilder.header("Authorization", "Splynx-EA (access_token=$cleanToken)")
             }
             
-            println("DEBUG_API_V3: Ejecutando interceptor con URL: ${originalRequest.url}")
         }
 
         val request = requestBuilder.build()

@@ -7,6 +7,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Query
 
 interface SplynxApiService {
 
@@ -15,9 +16,11 @@ interface SplynxApiService {
         @Body request: LoginRequest
     ): Response<LoginResponse>
 
-    // Obtener listado de tareas (Scheduling)
-    // El prefijo 'admin/' es obligatorio para acceder a recursos de administración
-    // tras confirmarse error 500 sin él.
-    @GET("admin/scheduling/tasks/")
-    suspend fun getTasks(): Response<List<TaskItem>>
+    // El parámetro de filtro de Splynx tiene formato especial: main_attributes[assignee]
+// El @Query("main_attributes[assignee]") le dice a Retrofit que añada
+// ese parámetro literal a la URL: ?main_attributes[assignee]=adminID
+    @GET("admin/scheduling/tasks")
+    suspend fun getTasks(
+        @Query("main_attributes[assignee]") assignee: String
+    ): Response<List<TaskItem>>
 }
