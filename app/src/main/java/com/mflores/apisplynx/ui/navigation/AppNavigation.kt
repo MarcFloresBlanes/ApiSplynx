@@ -14,8 +14,11 @@ import com.mflores.apisplynx.ui.home.HomeScreen
 import com.mflores.apisplynx.ui.login.LoginScreen
 import com.mflores.apisplynx.ui.tasks.TasksScreen
 import com.mflores.apisplynx.viewmodel.LoginViewModel
+import com.mflores.apisplynx.ui.tasks.TaskDetailScreen
+import androidx.navigation.toRoute
 
 import androidx.compose.runtime.rememberCoroutineScope
+
 import kotlinx.coroutines.launch
 
 @Composable
@@ -63,14 +66,32 @@ fun AppNavigation() {
         }
 
         composable<Tasks> {
-            TasksScreen(onLogout = {
-                scope.launch {
-                    sessionManager.clearSession()
-                    navController.navigate(Login) {
-                        popUpTo(Tasks) { inclusive = true }
+            TasksScreen(
+                onLogout = {
+                    scope.launch {
+                        sessionManager.clearSession()
+                        navController.navigate(Login) {
+                            popUpTo(Tasks) { inclusive = true }
+                        }
                     }
+                },
+                // ← Nuevo callback: al pulsar una tarea navega al detalle pasándole los IDs
+                onTaskClick = { taskId, customerId ->
+                    navController.navigate(TaskDetail(taskId, customerId))
                 }
-            })
+            )
+        }
+
+        composable<TaskDetail> { backStackEntry ->
+            // Recuperamos los argumentos (taskId y customerId) que nos pasaron al navegar
+            val args = backStackEntry.toRoute<TaskDetail>()
+
+            TaskDetailScreen(
+                taskId = args.taskId,
+                customerId = args.customerId,
+                // Al pulsar la flecha de atrás, volvemos a la pantalla anterior
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }

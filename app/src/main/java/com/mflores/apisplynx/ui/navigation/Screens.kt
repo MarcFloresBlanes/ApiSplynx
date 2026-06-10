@@ -11,3 +11,8 @@ object Home
 
 @Serializable
 object Tasks
+@Serializable
+data class TaskDetail(
+    val taskId: Int,
+    val customerId: Int
+)

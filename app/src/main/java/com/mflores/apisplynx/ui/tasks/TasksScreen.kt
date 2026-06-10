@@ -1,6 +1,7 @@
 package com.mflores.apisplynx.ui.tasks
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,7 +29,8 @@ import com.mflores.apisplynx.viewmodel.TasksViewModel
 @Composable
 fun TasksScreen(
     viewModel: TasksViewModel = viewModel(),
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onTaskClick: (taskId: Int, customerId: Int) -> Unit
 ) {
     val tasks by viewModel.tasks.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -67,7 +69,17 @@ fun TasksScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(tasks) { task ->
-                        TaskCard(task)
+                        TaskCard(
+                            task = task,
+                            // Al pulsar la card pasamos el ID de la tarea y el del cliente asociado
+                            // Los ?: 0 son por si vienen null desde la API
+                            onClick = {
+                                onTaskClick(
+                                    task.id ?: 0,
+                                    task.relatedCustomerId ?: 0
+                                )
+                            }
+                        )
                     }
                 }
             }
@@ -76,11 +88,16 @@ fun TasksScreen(
 }
 
 @Composable
-fun TaskCard(task: TaskItem) {
+fun TaskCard(
+    task: TaskItem,
+    onClick: () -> Unit  // ← nuevo parámetro
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },  // ← hace la card clickable
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
+    ){
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = task.title ?: "Sin título",
