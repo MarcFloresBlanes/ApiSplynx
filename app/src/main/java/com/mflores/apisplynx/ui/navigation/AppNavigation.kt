@@ -16,6 +16,7 @@ import com.mflores.apisplynx.ui.tasks.TasksScreen
 import com.mflores.apisplynx.viewmodel.LoginViewModel
 
 import androidx.compose.runtime.rememberCoroutineScope
+import com.mflores.apisplynx.data.local.SessionEvents
 import kotlinx.coroutines.launch
 
 @Composable
@@ -32,6 +33,18 @@ fun AppNavigation() {
         if (token != null && navController.currentDestination?.route == Login::class.qualifiedName) {
             navController.navigate(Home) {
                 popUpTo(Login) { inclusive = true }
+            }
+        }
+    }
+
+    // Escucha eventos de sesión expirada (cuando la API devuelve 401)
+    // y redirige automáticamente al login limpiando el historial
+    LaunchedEffect(Unit) {
+        SessionEvents.sessionExpired.collect {
+            // Navegamos al Login y eliminamos todas las pantallas anteriores
+            // para que el usuario no pueda volver atrás
+            navController.navigate(Login) {
+                popUpTo(0) { inclusive = true }
             }
         }
     }
