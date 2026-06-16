@@ -36,7 +36,7 @@ class AuthInterceptor(private val sessionManager: SessionManager) : Interceptor 
                 // FORMATO ESTÁNDAR PARA SPLYNX 2.0 (JWT):
                 requestBuilder.header("Authorization", "Splynx-EA (access_token=$cleanToken)")
             }
-            
+            println("DEBUG_TOKEN_TEMP: $cleanToken")
         }
 
         val request = requestBuilder.build()

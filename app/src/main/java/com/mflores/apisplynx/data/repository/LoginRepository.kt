@@ -2,6 +2,7 @@ package com.mflores.apisplynx.data.repository
 
 import android.content.Context
 import com.mflores.apisplynx.data.local.SessionManager
+import com.mflores.apisplynx.data.model.CustomerItem
 import com.mflores.apisplynx.data.model.LoginRequest
 import com.mflores.apisplynx.data.model.LoginResponse
 import com.mflores.apisplynx.data.model.TaskItem
@@ -55,5 +56,10 @@ class LoginRepository(private val context: Context) {
         // solo nos devuelva las tareas de este administrador
         // Llamamos a la API con el filtro de assignee
         return RetrofitClient.getApiService(context).getTasks(assignee = adminId)
+    }
+    // Obtiene los datos completos de un cliente por su ID
+    // Devuelve un Response<CustomerItem> que el ViewModel manejará
+    suspend fun getCustomer(customerId: Int): Response<CustomerItem> {
+        return RetrofitClient.getApiService(context).getCustomer(customerId)
     }
 }
