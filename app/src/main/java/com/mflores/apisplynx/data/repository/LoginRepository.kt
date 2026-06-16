@@ -62,4 +62,9 @@ class LoginRepository(private val context: Context) {
     suspend fun getCustomer(customerId: Int): Response<CustomerItem> {
         return RetrofitClient.getApiService(context).getCustomer(customerId)
     }
+
+    // Obtiene los datos completos de una tarea por su ID
+    suspend fun getTask(taskId: Int): Response<TaskItem> {
+        return RetrofitClient.getApiService(context).getTask(taskId)
+    }
 }

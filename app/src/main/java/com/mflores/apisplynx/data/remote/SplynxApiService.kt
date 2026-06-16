@@ -33,4 +33,11 @@ interface SplynxApiService {
     suspend fun getCustomer(
         @Path("id") customerId: Int
     ): Response<CustomerItem>
+
+    // Endpoint para obtener una tarea concreta por su ID
+// La URL queda como: admin/scheduling/tasks/5316
+    @GET("admin/scheduling/tasks/{id}")
+    suspend fun getTask(
+        @Path("id") taskId: Int
+    ): Response<TaskItem>
 }

@@ -2,9 +2,9 @@ package com.mflores.apisplynx.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mflores.apisplynx.data.model.CustomerItem
+import com.mflores.apisplynx.data.model.TaskItem
 import com.mflores.apisplynx.data.repository.LoginRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,17 +12,20 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 // ViewModel para la pantalla de detalle de una tarea.
-// Se encarga de cargar la información del cliente asociado a la tarea.
+// Carga tanto los datos completos de la tarea como los del cliente asociado.
 class TaskDetailViewModel(application: Application) : AndroidViewModel(application) {
 
-    // Repositorio que hace las llamadas a la API
     private val repository = LoginRepository(application)
 
-    // Estado del cliente cargado (null mientras no se cargue o si falla)
+    // Estado de la tarea cargada (con todos los campos: gps, descripción, etc.)
+    private val _task = MutableStateFlow<TaskItem?>(null)
+    val task: StateFlow<TaskItem?> = _task.asStateFlow()
+
+    // Estado del cliente asociado
     private val _customer = MutableStateFlow<CustomerItem?>(null)
     val customer: StateFlow<CustomerItem?> = _customer.asStateFlow()
 
-    // Estado de carga, para mostrar un spinner mientras se hace la llamada
+    // Estado de carga global (true mientras al menos una llamada esté en curso)
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -30,30 +33,33 @@ class TaskDetailViewModel(application: Application) : AndroidViewModel(applicati
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    // Carga los datos del cliente desde la API
-    // viewModelScope hace que la coroutine se cancele automáticamente si el ViewModel se destruye
-    fun loadCustomer(customerId: Int) {
-        // Si el ID es 0 significa que la tarea no tiene cliente asociado, no hacemos nada
-        if (customerId == 0) {
-            _errorMessage.value = "Esta tarea no tiene cliente asociado"
-            return
-        }
-
+    // Carga la tarea y el cliente en paralelo
+    fun loadDetails(taskId: Int, customerId: Int) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
             try {
-                val response = repository.getCustomer(customerId)
-                if (response.isSuccessful) {
-                    _customer.value = response.body()
-                    println("DEBUG_CUSTOMER: Cliente cargado: ${response.body()?.name}")
+                // 1. Cargamos la tarea
+                val taskResponse = repository.getTask(taskId)
+                if (taskResponse.isSuccessful) {
+                    _task.value = taskResponse.body()
+                    println("DEBUG_TASK_DETAIL: Tarea cargada: ${taskResponse.body()?.title}")
                 } else {
-                    val errorBody = response.errorBody()?.string()
-                    println("DEBUG_CUSTOMER: Error ${response.code()} - $errorBody")
-                    _errorMessage.value = "Error ${response.code()}: $errorBody"
+                    _errorMessage.value = "Error al cargar la tarea: ${taskResponse.code()}"
+                }
+
+                // 2. Cargamos el cliente (si la tarea tiene cliente asociado)
+                if (customerId != 0) {
+                    val customerResponse = repository.getCustomer(customerId)
+                    if (customerResponse.isSuccessful) {
+                        _customer.value = customerResponse.body()
+                        println("DEBUG_CUSTOMER: Cliente cargado: ${customerResponse.body()?.name}")
+                    } else {
+                        println("DEBUG_CUSTOMER: Error ${customerResponse.code()}")
+                    }
                 }
             } catch (e: Exception) {
-                println("DEBUG_CUSTOMER: Excepción: ${e.message}")
+                println("DEBUG_TASK_DETAIL: Excepción: ${e.message}")
                 e.printStackTrace()
                 _errorMessage.value = "Error de conexión: ${e.message}"
             } finally {

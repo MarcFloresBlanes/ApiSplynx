@@ -10,5 +10,9 @@ data class TaskItem(
     @SerializedName("title") val title: String?,
     @SerializedName("date_start") val dateStart: String?,
     @SerializedName("address") val address: String?,
-    @SerializedName("related_customer_id") val relatedCustomerId: Int?
+    @SerializedName("related_customer_id") val relatedCustomerId: Int?,
+    // Coordenadas GPS de la tarea en formato "lat,lng" (ej: "41.70505827,2.87528414")
+    @SerializedName("gps") val gps: String?,
+    // Descripción de la tarea (puede contener HTML)
+    @SerializedName("description") val description: String?
 )

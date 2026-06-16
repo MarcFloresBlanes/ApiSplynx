@@ -1,11 +1,18 @@
 package com.mflores.apisplynx.ui.tasks
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -14,13 +21,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mflores.apisplynx.data.model.CustomerItem
+import com.mflores.apisplynx.data.model.TaskItem
 import com.mflores.apisplynx.viewmodel.TaskDetailViewModel
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,18 +36,20 @@ fun TaskDetailScreen(
     taskId: Int,
     customerId: Int,
     onBack: () -> Unit,
-    // El ViewModel se crea automáticamente con esta línea
     viewModel: TaskDetailViewModel = viewModel()
 ) {
-    // Recogemos los estados del ViewModel para que la UI se redibuje automáticamente
+    val task by viewModel.task.collectAsState()
     val customer by viewModel.customer.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    // LaunchedEffect ejecuta su contenido una sola vez cuando la pantalla se abre
-    // (o cuando cambia el customerId). Aquí disparamos la carga de los datos del cliente.
-    LaunchedEffect(customerId) {
-        viewModel.loadCustomer(customerId)
+    // LocalContext.current nos da acceso al contexto para poder lanzar Intents
+    // (necesario para abrir la app de Google Maps)
+    val context = LocalContext.current
+
+    // Cuando se abre la pantalla, lanzamos la carga de los datos
+    LaunchedEffect(taskId, customerId) {
+        viewModel.loadDetails(taskId, customerId)
     }
 
     Scaffold(
@@ -63,13 +73,11 @@ fun TaskDetailScreen(
                 .fillMaxSize()
         ) {
             when {
-                // Mientras se carga, mostramos un círculo girando
                 isLoading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
-                // Si hay error, lo mostramos centrado
                 errorMessage != null -> {
                     Text(
                         text = errorMessage!!,
@@ -79,31 +87,90 @@ fun TaskDetailScreen(
                             .padding(16.dp)
                     )
                 }
-                // Si todo va bien, mostramos los datos del cliente
-                customer != null -> {
-                    CustomerInfoSection(
-                        customer = customer!!,
-                        taskId = taskId,
+                task != null -> {
+                    // Hacemos la columna scrollable por si el contenido no cabe en pantalla
+                    Column(
                         modifier = Modifier
                             .padding(16.dp)
                             .fillMaxSize()
-                    )
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        // Sección de la tarea
+                        TaskInfoSection(task = task!!)
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Sección del cliente (solo si lo hemos cargado)
+                        if (customer != null) {
+                            CustomerInfoSection(customer = customer!!)
+                            Spacer(modifier = Modifier.height(24.dp))
+                        }
+
+                        // Botón para abrir Google Maps (solo si la tarea tiene GPS)
+                        if (!task!!.gps.isNullOrBlank()) {
+                            Button(
+                                onClick = {
+                                    // Construimos un Intent que le pide al sistema que abra
+                                    // una app capaz de mostrar coordenadas geográficas.
+                                    // El esquema "geo:" es el estándar de Android para esto.
+                                    val gpsUri = Uri.parse("geo:${task!!.gps}?q=${task!!.gps}")
+                                    val intent = Intent(Intent.ACTION_VIEW, gpsUri)
+                                    // setPackage fuerza que se abra concretamente Google Maps
+                                    // si está instalada (sino se usa cualquier app de mapas)
+                                    intent.setPackage("com.google.android.apps.maps")
+                                    context.startActivity(intent)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Map,
+                                    contentDescription = null
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Abrir en Google Maps")
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-// Componente que muestra la información del cliente
-// Lo separamos en una función aparte para que el código sea más limpio
+// Sección con los datos principales de la tarea
 @Composable
-fun CustomerInfoSection(
-    customer: CustomerItem,
-    taskId: Int,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        // Título de la sección
+fun TaskInfoSection(task: TaskItem) {
+    Column {
+        // Título de la tarea
+        Text(
+            text = task.title ?: "Sin título",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Fecha
+        InfoRow(
+            icon = Icons.Default.Schedule,
+            text = task.dateStart ?: "Sin fecha"
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Dirección
+        InfoRow(
+            icon = Icons.Default.LocationOn,
+            text = task.address ?: "Sin dirección"
+        )
+    }
+}
+
+// Sección con los datos del cliente
+@Composable
+fun CustomerInfoSection(customer: CustomerItem) {
+    Column {
         Text(
             text = "Información del cliente",
             style = MaterialTheme.typography.titleLarge,
@@ -113,7 +180,6 @@ fun CustomerInfoSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Fila del nombre
         InfoRow(
             icon = Icons.Default.Person,
             text = customer.name ?: "Sin nombre"
@@ -121,7 +187,6 @@ fun CustomerInfoSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Fila del teléfono
         InfoRow(
             icon = Icons.Default.Phone,
             text = customer.phone ?: "Sin teléfono"
@@ -129,25 +194,14 @@ fun CustomerInfoSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Fila del email
         InfoRow(
             icon = Icons.Default.Email,
             text = customer.email ?: "Sin email"
         )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // De momento dejamos el ID de la tarea visible para depurar
-        // Lo quitaremos cuando añadamos el mapa
-        Text(
-            text = "ID de la tarea: $taskId",
-            fontSize = 12.sp,
-            color = Color.Gray
-        )
     }
 }
 
-// Componente reutilizable para mostrar una fila con icono + texto
+// Componente reutilizable: una fila con icono + texto
 @Composable
 fun InfoRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
