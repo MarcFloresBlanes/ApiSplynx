@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
@@ -18,6 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,14 +46,27 @@ fun TaskDetailScreen(
     val customer by viewModel.customer.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    // Nuevos estados relacionados con el cierre de la tarea
+    val isClosing by viewModel.isClosing.collectAsState()
+    val taskClosed by viewModel.taskClosed.collectAsState()
 
-    // LocalContext.current nos da acceso al contexto para poder lanzar Intents
-    // (necesario para abrir la app de Google Maps)
     val context = LocalContext.current
 
-    // Cuando se abre la pantalla, lanzamos la carga de los datos
+    // Estado local para controlar si el diálogo de confirmación está visible o no
+    // Usamos remember + mutableStateOf porque es un estado que solo interesa a la UI
+    var showConfirmDialog by remember { mutableStateOf(false) }
+
+    // Cargamos los datos al entrar
     LaunchedEffect(taskId, customerId) {
         viewModel.loadDetails(taskId, customerId)
+    }
+
+    // Cuando la tarea se cierra correctamente, volvemos automáticamente atrás
+    // Este LaunchedEffect se dispara cuando taskClosed pasa de false a true
+    LaunchedEffect(taskClosed) {
+        if (taskClosed) {
+            onBack()
+        }
     }
 
     Scaffold(
@@ -88,35 +105,27 @@ fun TaskDetailScreen(
                     )
                 }
                 task != null -> {
-                    // Hacemos la columna scrollable por si el contenido no cabe en pantalla
                     Column(
                         modifier = Modifier
                             .padding(16.dp)
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
                     ) {
-                        // Sección de la tarea
                         TaskInfoSection(task = task!!)
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        // Sección del cliente (solo si lo hemos cargado)
                         if (customer != null) {
                             CustomerInfoSection(customer = customer!!)
                             Spacer(modifier = Modifier.height(24.dp))
                         }
 
-                        // Botón para abrir Google Maps (solo si la tarea tiene GPS)
+                        // Botón para abrir Google Maps (solo si hay GPS)
                         if (!task!!.gps.isNullOrBlank()) {
                             Button(
                                 onClick = {
-                                    // Construimos un Intent que le pide al sistema que abra
-                                    // una app capaz de mostrar coordenadas geográficas.
-                                    // El esquema "geo:" es el estándar de Android para esto.
                                     val gpsUri = Uri.parse("geo:${task!!.gps}?q=${task!!.gps}")
                                     val intent = Intent(Intent.ACTION_VIEW, gpsUri)
-                                    // setPackage fuerza que se abra concretamente Google Maps
-                                    // si está instalada (sino se usa cualquier app de mapas)
                                     intent.setPackage("com.google.android.apps.maps")
                                     context.startActivity(intent)
                                 },
@@ -129,11 +138,68 @@ fun TaskDetailScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text("Abrir en Google Maps")
                             }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+
+                        // Botón para cerrar la tarea
+                        // Al pulsar mostramos el diálogo de confirmación en vez de cerrar directamente
+                        // enabled = !isClosing → mientras se está cerrando, el botón se deshabilita
+                        Button(
+                            onClick = { showConfirmDialog = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !isClosing,
+                            // Color verde para transmitir "acción positiva/completar"
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF2E7D32)
+                            )
+                        ) {
+                            if (isClosing) {
+                                // Mientras se cierra, mostramos un spinner pequeño
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Cerrar tarea")
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    // Diálogo de confirmación
+    // Solo se muestra cuando showConfirmDialog es true
+    if (showConfirmDialog) {
+        AlertDialog(
+            // Al pulsar fuera del diálogo o el botón atrás, se cierra sin hacer nada
+            onDismissRequest = { showConfirmDialog = false },
+            title = { Text("¿Cerrar tarea?") },
+            text = { Text("Esta acción marcará la tarea como terminada. ¿Estás seguro?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showConfirmDialog = false  // Cerramos el diálogo
+                        viewModel.closeTask(taskId)  // Y llamamos a la API
+                    }
+                ) {
+                    Text("Sí, cerrar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
 
@@ -141,7 +207,6 @@ fun TaskDetailScreen(
 @Composable
 fun TaskInfoSection(task: TaskItem) {
     Column {
-        // Título de la tarea
         Text(
             text = task.title ?: "Sin título",
             style = MaterialTheme.typography.titleLarge,
@@ -151,7 +216,6 @@ fun TaskInfoSection(task: TaskItem) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Fecha
         InfoRow(
             icon = Icons.Default.Schedule,
             text = task.dateStart ?: "Sin fecha"
@@ -159,7 +223,6 @@ fun TaskInfoSection(task: TaskItem) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Dirección
         InfoRow(
             icon = Icons.Default.LocationOn,
             text = task.address ?: "Sin dirección"
@@ -201,7 +264,6 @@ fun CustomerInfoSection(customer: CustomerItem) {
     }
 }
 
-// Componente reutilizable: una fila con icono + texto
 @Composable
 fun InfoRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,

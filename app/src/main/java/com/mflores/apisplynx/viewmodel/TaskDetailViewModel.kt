@@ -33,6 +33,16 @@ class TaskDetailViewModel(application: Application) : AndroidViewModel(applicati
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    // Estado que indica si la tarea se ha cerrado correctamente
+    // Cuando sea true, la UI navegará automáticamente atrás
+    private val _taskClosed = MutableStateFlow(false)
+    val taskClosed: StateFlow<Boolean> = _taskClosed.asStateFlow()
+
+    // Estado de carga específico para el proceso de cerrar la tarea
+    // Lo separamos del isLoading normal para que la UI sepa que está cerrando
+    private val _isClosing = MutableStateFlow(false)
+    val isClosing: StateFlow<Boolean> = _isClosing.asStateFlow()
+
     // Carga la tarea y el cliente en paralelo
     fun loadDetails(taskId: Int, customerId: Int) {
         viewModelScope.launch {
@@ -43,7 +53,7 @@ class TaskDetailViewModel(application: Application) : AndroidViewModel(applicati
                 val taskResponse = repository.getTask(taskId)
                 if (taskResponse.isSuccessful) {
                     _task.value = taskResponse.body()
-                    println("DEBUG_TASK_DETAIL: Tarea cargada: ${taskResponse.body()?.title}")
+                    println("DEBUG_TASK_DETAIL: Tarea cargada: ${taskResponse.body()?.id} - ${taskResponse.body()?.title}")
                 } else {
                     _errorMessage.value = "Error al cargar la tarea: ${taskResponse.code()}"
                 }
@@ -64,6 +74,32 @@ class TaskDetailViewModel(application: Application) : AndroidViewModel(applicati
                 _errorMessage.value = "Error de conexión: ${e.message}"
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    // Cierra la tarea llamando a la API
+    fun closeTask(taskId: Int) {
+        viewModelScope.launch {
+            _isClosing.value = true
+            _errorMessage.value = null
+            try {
+                val response = repository.closeTask(taskId)
+                if (response.isSuccessful) {
+                    println("DEBUG_CLOSE_TASK: Tarea $taskId cerrada correctamente")
+                    // Marcamos como cerrada para que la UI navegue atrás
+                    _taskClosed.value = true
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    println("DEBUG_CLOSE_TASK: Error ${response.code()} - $errorBody")
+                    _errorMessage.value = "Error al cerrar la tarea: ${response.code()}"
+                }
+            } catch (e: Exception) {
+                println("DEBUG_CLOSE_TASK: Excepción: ${e.message}")
+                e.printStackTrace()
+                _errorMessage.value = "Error de conexión: ${e.message}"
+            } finally {
+                _isClosing.value = false
             }
         }
     }

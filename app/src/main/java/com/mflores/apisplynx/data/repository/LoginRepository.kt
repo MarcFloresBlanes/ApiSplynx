@@ -10,6 +10,7 @@ import com.mflores.apisplynx.data.remote.RetrofitClient
 import com.mflores.apisplynx.util.JwtUtils
 import kotlinx.coroutines.flow.first
 import retrofit2.Response
+import com.mflores.apisplynx.data.model.CloseTaskRequest
 
 /**
  * Repositorio encargado de gestionar las operaciones de autenticación.
@@ -66,5 +67,14 @@ class LoginRepository(private val context: Context) {
     // Obtiene los datos completos de una tarea por su ID
     suspend fun getTask(taskId: Int): Response<TaskItem> {
         return RetrofitClient.getApiService(context).getTask(taskId)
+    }
+
+    // Cierra una tarea marcándola con closed = "1"
+    // El backend de Splynx cambia automáticamente el workflow_status_id al terminar
+    suspend fun closeTask(taskId: Int): Response<Unit> {
+        return RetrofitClient.getApiService(context).closeTask(
+            taskId = taskId,
+            body = CloseTaskRequest()  // Por defecto closed = "1"
+        )
     }
 }

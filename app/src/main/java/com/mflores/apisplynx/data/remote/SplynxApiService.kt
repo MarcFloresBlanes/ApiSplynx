@@ -10,6 +10,8 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.PUT
+import com.mflores.apisplynx.data.model.CloseTaskRequest
 
 interface SplynxApiService {
 
@@ -23,7 +25,9 @@ interface SplynxApiService {
 // ese parámetro literal a la URL: ?main_attributes[assignee]=adminID
     @GET("admin/scheduling/tasks")
     suspend fun getTasks(
-        @Query("main_attributes[assignee]") assignee: String
+        @Query("main_attributes[assignee]") assignee: String,
+        // Nuevo filtro: solo tareas no cerradas (closed = 0)
+        @Query("main_attributes[closed]") closed: String = "0"
     ): Response<List<TaskItem>>
 
     // Endpoint para obtener los datos de un cliente concreto por su ID
@@ -35,9 +39,18 @@ interface SplynxApiService {
     ): Response<CustomerItem>
 
     // Endpoint para obtener una tarea concreta por su ID
-// La URL queda como: admin/scheduling/tasks/5316
+    // La URL queda como: admin/scheduling/tasks/5316
     @GET("admin/scheduling/tasks/{id}")
     suspend fun getTask(
         @Path("id") taskId: Int
     ): Response<TaskItem>
+
+    // Endpoint para actualizar una tarea (cerrarla)
+    // PUT es el método HTTP para modificar recursos existentes
+    // @Body envía el JSON con los campos a actualizar
+    @PUT("admin/scheduling/tasks/{id}")
+    suspend fun closeTask(
+        @Path("id") taskId: Int,
+        @Body body: CloseTaskRequest
+    ): Response<Unit>  // Unit porque la respuesta viene vacía (null)
 }

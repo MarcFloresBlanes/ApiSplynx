@@ -26,9 +26,11 @@ class TasksViewModel(application: Application) : AndroidViewModel(application) {
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    /*
     init {
         loadTasks()
     }
+    */
 
     /**
      * Carga las tareas desde la API de Splynx.

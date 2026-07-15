@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mflores.apisplynx.data.model.TaskItem
 import com.mflores.apisplynx.viewmodel.TasksViewModel
+import androidx.compose.runtime.LaunchedEffect
 
 /**
  * Pantalla que muestra el listado de tareas asignadas.
@@ -35,6 +36,13 @@ fun TasksScreen(
     val tasks by viewModel.tasks.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+
+    // Recarga las tareas cada vez que la pantalla vuelve a ser visible
+    // LaunchedEffect(Unit) se ejecuta al entrar en la pantalla,
+    // incluyendo cuando volvemos del detalle tras cerrar una tarea
+    LaunchedEffect(Unit) {
+        viewModel.loadTasks()
+    }
 
     Scaffold(
         topBar = {
