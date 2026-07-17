@@ -8,7 +8,7 @@ import com.google.gson.annotations.SerializedName
 data class TaskItem(
     @SerializedName("id") val id: Int?,
     @SerializedName("title") val title: String?,
-    @SerializedName("date_start") val dateStart: String?,
+    @SerializedName("scheduled_from") val scheduledFrom: String?,
     @SerializedName("address") val address: String?,
     @SerializedName("related_customer_id") val relatedCustomerId: Int?,
     // Coordenadas GPS de la tarea en formato "lat,lng" (ej: "41.70505827,2.87528414")

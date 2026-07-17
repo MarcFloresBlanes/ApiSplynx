@@ -67,7 +67,10 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     //datastore
     implementation(libs.androidx.datastore.preferences)
-
+    // Accompanist Permissions: facilita el manejo de permisos en Jetpack Compose
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
+    // Coil: para mostrar imágenes desde Uri en Jetpack Compose
+    implementation("io.coil-kt:coil-compose:2.5.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -76,4 +79,6 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+
 }

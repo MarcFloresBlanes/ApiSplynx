@@ -126,7 +126,7 @@ fun TaskCard(
                 Spacer(modifier = Modifier.width(8.dp))
                 // Formateamos la fecha (asumiendo formato YYYY-MM-DD HH:MM:SS)
                 Text(
-                    text = task.dateStart ?: "Sin fecha",
+                    text = task.scheduledFrom ?: "Sin fecha",
                     fontSize = 14.sp,
                     color = Color.DarkGray
                 )

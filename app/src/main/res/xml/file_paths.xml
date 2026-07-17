@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Este archivo define a qué carpetas puede acceder el FileProvider.
+    Le decimos que puede acceder a la carpeta "Pictures" DENTRO del directorio
+    privado de la app (getExternalFilesDir), no de fuera.
+
+    Esto es lo que permite que:
+    1. La app pueda decirle a la cámara "guarda la foto AQUÍ"
+    2. La cámara pueda guardarla en esa ruta sin problemas de permisos
+    3. La app pueda leer luego esa foto
+-->
+<paths>
+    <external-files-path
+        name="my_images"
+        path="Pictures" />
+</paths>

@@ -3,6 +3,14 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Permiso para usar la cámara del dispositivo -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Declaración de que la app usa la cámara pero NO es obligatoria -->
+    <!-- Si no lo pones, tu app no aparecerá en Play Store para dispositivos sin cámara -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -24,6 +32,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!--
+        FileProvider: permite compartir archivos con otras apps (la cámara) de forma segura.
+        - authorities: identificador único (usamos el nombre del paquete + ".fileprovider")
+        - exported="false": no lo puede usar cualquier app aleatoria
+        - grantUriPermissions="true": permite dar permisos temporales a la cámara
+        - meta-data: apunta al file_paths.xml que hemos creado
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>
